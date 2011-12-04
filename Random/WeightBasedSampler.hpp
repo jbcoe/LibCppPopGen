@@ -39,7 +39,7 @@ class WeightBasedSampler
 			Value_t GetValue(RandomEngine_t& randomEngine)
 			{
 				double randomValue = m_uniformDist(randomEngine);
-        int valueIndex = getIndex(randomValue, m_cumulativeWeights);
+				int valueIndex = getIndex(randomValue, m_cumulativeWeights);
         if ( valueIndex < 0 )
 					throw std::runtime_error("Weight value cannot be found in cumulative weights");
 				return m_values[valueIndex];
