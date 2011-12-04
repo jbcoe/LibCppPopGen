@@ -22,12 +22,14 @@ class WeightBasedSampler
 			Value_t GetValue(RandomEngine_t& randomEngine)
 			{
 				double randomValue = m_uniformDist(randomEngine);
-				return m_values[getIndex(randomValue)];
+				return m_values[getIndex(randomValue, m_cumulativeWeights)];
 			}
 
-		int getIndex(double value) 
+		/// return -1 if index cannot be found
+		template <typename T>
+		static int getIndex(T value, const std::vector<T>& weights) 
 		{
-			if ( m_cumulativeWeights.empty() || value > m_cumulativeWeights.back() )
+			if ( weights.empty() || value > weights.back() )
 			{
 				return -1;
 			}
@@ -36,7 +38,7 @@ class WeightBasedSampler
 			int index = -1;
 
 			left = 0;
-			right = m_cumulativeWeights.size() - 1;
+			right = weights.size() - 1;
 
 			while (left <= right) 
 			{
@@ -44,18 +46,18 @@ class WeightBasedSampler
 
 				if (middle == 0) 
 				{
-					if ( value < m_cumulativeWeights[0] ) 
+					if ( value < weights[0] ) 
 					{
 						index = 0;
 					}
 					break;
 				}
-				else if ( value <= m_cumulativeWeights[middle] && value > m_cumulativeWeights[middle-1] )
+				else if ( value <= weights[middle] && value > weights[middle-1] )
 				{
 					index = middle;
 					break;
 				} 
-				else if ( value > m_cumulativeWeights[middle] ) 
+				else if ( value > weights[middle] ) 
 				{
 					left = middle + 1;
 				} 

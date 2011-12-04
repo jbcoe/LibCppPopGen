@@ -15,6 +15,8 @@ $(EXECUTABLE): $(OBJECTS)
 .cpp.o:
 	$(CC) $(CFLAGS) $< -c -o $@
 
+WeightBasedSampler.o : WeightBasedSampler.cpp WeightBasedSampler.hpp
+
 clean:
 	- rm $(OBJECTS) $(EXECUTABLE)
 
