@@ -22,25 +22,34 @@ class WeightBasedSampler
 			m_uniformDist = std::uniform_real_distribution<double>(0,m_cumulativeWeights.back());
 		}
 
-    void reserve(size_t reservedSize)
+		void reserve(size_t reservedSize)
 		{
 			m_cumulativeWeights.reserve(reservedSize);
 			m_values.reserve(reservedSize);
 		}
 
-    void clear()
+		void clear()
 		{
 			m_cumulativeWeights.clear();
 			m_values.clear();
 			m_weightSum = 0.0;
 		}
 
+
+		Value_t& GetValueForWeight( double cumulativeWeightValue )
+		{
+			int valueIndex = getIndex(cumulativeWeightValue, m_cumulativeWeights);
+			if ( valueIndex < 0 )
+				throw std::runtime_error("Weight value cannot be found in cumulative weights");
+			return m_values[valueIndex];
+		}
+
 		template <typename RandomEngine_t>
-			Value_t GetValue(RandomEngine_t& randomEngine)
+			Value_t& GetValue(RandomEngine_t& randomEngine)
 			{
 				double randomValue = m_uniformDist(randomEngine);
 				int valueIndex = getIndex(randomValue, m_cumulativeWeights);
-        if ( valueIndex < 0 )
+				if ( valueIndex < 0 )
 					throw std::runtime_error("Weight value cannot be found in cumulative weights");
 				return m_values[valueIndex];
 			}
@@ -66,7 +75,7 @@ class WeightBasedSampler
 
 					if (middle == 0) 
 					{
-						if ( value < weights[0] ) 
+						if ( value <= weights[0] ) 
 						{
 							index = 0;
 						}
