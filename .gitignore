@@ -1,3 +1,4 @@
 *.o
 Random/WeightBasedSampler
 TestRunner
+src/CppPopGen/SimpleSimulation/SimpleSimulation

@@ -20,6 +20,9 @@ class Mutation
 	/// (All organisms or no organisms carry the mutation)
   virtual bool isFixed() const = 0;
 
+  /// Set fixation time
+	virtual void setFixationTime() = 0; 
+
 	/// Get Number of copies of the mutation in the population
 	virtual int count() const = 0;
 
