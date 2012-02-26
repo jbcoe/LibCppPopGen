@@ -1,6 +1,6 @@
-CC = g++
-CCFLAGS = -I /opt/local/include 
-LDFLAGS = -L/opt/local/lib -lcppunit
+CC = g++-mp-4.7
+CCFLAGS = -std=c++0x -I /opt/local/include 
+LDFLAGS = -std=c++0x -L/opt/local/lib -lcppunit
 
 SOURCES=TestRunner.cpp
 
