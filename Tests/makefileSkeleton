@@ -1,1 +1,0 @@
-g++ TestRunner.cpp -I /opt/local/include/ -L/opt/local/lib/ -lcppunit
