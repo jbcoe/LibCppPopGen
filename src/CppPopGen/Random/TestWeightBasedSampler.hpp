@@ -11,7 +11,7 @@ class TestWeightBasedSampler : public CppUnit::TestFixture
 	protected:
 	void testCumulativeWeightLookup()
 	{
-		WeightBasedSampler<std::string> stringSampler;
+		PopGen::WeightBasedSampler<std::string> stringSampler;
 		stringSampler.add(2.,"Cat");
 
 		CPPUNIT_ASSERT(stringSampler.GetValueForWeight(0.) == "Cat");

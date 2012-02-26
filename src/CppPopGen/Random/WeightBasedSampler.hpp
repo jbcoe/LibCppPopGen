@@ -1,6 +1,9 @@
 #include <vector>
 #include <random>
 #include <stdexcept>
+#include "../CppPopGenBase.h"
+
+BEGIN_CPP_POPGEN
 
 template <typename Value_t>
 class WeightBasedSampler
@@ -104,3 +107,5 @@ class WeightBasedSampler
 		std::vector<Value_t> m_values;
 		double m_weightSum;
 };
+
+END_CPP_POPGEN
