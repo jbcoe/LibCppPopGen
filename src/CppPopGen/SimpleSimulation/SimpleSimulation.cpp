@@ -90,8 +90,31 @@ class MultiplicativeFitnessModel
 		}
 
 };
+      
+template <class Mutation_t>
+class AsexualReproductionModel
+{ 
+	public:
+  typedef std::vector<Mutation_t*> Organism;
+          
+	template <class Sampler_t, class Engine_t>
+	static std::vector<Mutation_t*> GetNewborn(Sampler_t& sampler, Engine_t& engine)
+	{
+				Organism* pOrganism = sampler.GetValue(engine);
+				return std::move(Organism(*pOrganism));
+	}
+};
 
-template <class FitnessModel_t>
+class NullMutationModel
+{
+	public:
+		template <class Mutation_t>
+		static void Mutate (std::vector<Mutation_t*>& organism)
+		{
+		}
+};
+
+template <class FitnessModel_t, class ReproductionModel_t, class MutationModel_t>
 class Population
 {
 	public:
@@ -118,19 +141,21 @@ class Population
 		{
 			++m_timestep;
 
+			m_newOrganisms.clear();
+			
 			/// Set up sampler
 			m_organismSampler.clear();
 			for ( Organism& organism : m_organisms )
 			{
 				m_organismSampler.add(FitnessModel_t::GetFitness(organism),&organism); 
 			}
-
+      
+			
 			/// Sample and mutate
-			m_newOrganisms.clear();
 			for ( int i=0; i<m_popSize; ++i )
 			{
-				Organism* pOrganism = m_organismSampler.GetValue(m_engine);
-				m_newOrganisms.push_back(Organism(*pOrganism));
+				m_newOrganisms.push_back(ReproductionModel_t::GetNewborn(m_organismSampler, m_engine));
+	    	MutationModel_t::Mutate(m_newOrganisms.back());
 			}
 
 			//decrement counts for mutations in current gen
@@ -214,7 +239,7 @@ class Population
 
 int main(int argc, char** argv)
 {
-	Population<MultiplicativeFitnessModel> population(100);
+	Population<MultiplicativeFitnessModel, AsexualReproductionModel<Mutation>, NullMutationModel> population(100);
 	while ( population.hasSegregatingMutations() )
 	{
 		population.next();
