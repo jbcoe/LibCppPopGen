@@ -2,4 +2,8 @@
 
 A C++ library for population genetics simulations
 
+Not much to see here yet although there is a very simple simulation in
+
+src/CppPopGen/SimpleSimulation/
+
 
