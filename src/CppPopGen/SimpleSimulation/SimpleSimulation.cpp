@@ -90,31 +90,47 @@ class MultiplicativeFitnessModel
 		}
 
 };
-      
+
 template <class Mutation_t>
 class AsexualReproductionModel
 { 
 	public:
-  typedef std::vector<Mutation_t*> Organism;
-          
-	template <class Sampler_t, class Engine_t>
-	static std::vector<Mutation_t*> GetNewborn(Sampler_t& sampler, Engine_t& engine)
-	{
+		typedef std::vector<Mutation_t*> Organism;
+
+		template <class Sampler_t, class Engine_t>
+			static std::vector<Mutation_t*> GetNewborn(Sampler_t& sampler, Engine_t& engine)
+			{
 				Organism* pOrganism = sampler.GetValue(engine);
 				return std::move(Organism(*pOrganism));
-	}
+			}
 };
 
 class NullMutationModel
 {
 	public:
 		template <class Mutation_t>
-		static void Mutate (std::vector<Mutation_t*>& organism)
-		{
-		}
+			static void Mutate (std::vector<Mutation_t*>& organism)
+			{
+			}
 };
 
-template <class FitnessModel_t, class ReproductionModel_t, class MutationModel_t>
+class LostOrFixedMutationsToCOUT
+{
+	public:
+		template <class Mutation_t>
+			static void ReportFixedMutation(const Mutation_t* mutation, int timestep)
+			{
+				std::cout << mutation->name() << " was fixed at step " << timestep << std::endl; 
+			}
+
+		template <class Mutation_t>
+			static void ReportLostMutation(const Mutation_t* mutation, int timestep)
+			{
+				std::cout << mutation->name() << " was lost at step " << timestep << std::endl; 
+			}
+};
+
+template <class FitnessModel_t, class ReproductionModel_t, class MutationModel_t, class Reporter_t>
 class Population
 {
 	public:
@@ -142,20 +158,20 @@ class Population
 			++m_timestep;
 
 			m_newOrganisms.clear();
-			
+
 			/// Set up sampler
 			m_organismSampler.clear();
 			for ( Organism& organism : m_organisms )
 			{
 				m_organismSampler.add(FitnessModel_t::GetFitness(organism),&organism); 
 			}
-      
-			
+
+
 			/// Sample and mutate
 			for ( int i=0; i<m_popSize; ++i )
 			{
 				m_newOrganisms.push_back(ReproductionModel_t::GetNewborn(m_organismSampler, m_engine));
-	    	MutationModel_t::Mutate(m_newOrganisms.back());
+				MutationModel_t::Mutate(m_newOrganisms.back());
 			}
 
 			//decrement counts for mutations in current gen
@@ -182,13 +198,13 @@ class Population
 
 				if ( pMutation->count() == 0 )
 				{
-					pMutation->setFixed(m_timestep);
-					std::cout << pMutation->name() << " was lost at step " << m_timestep << std::endl; 
+					pMutation->setFixed(m_timestep);  
+					Reporter_t::ReportLostMutation(pMutation.get(), m_timestep);
 				}
 				else if ( pMutation->count() == m_popSize )
 				{
 					pMutation->setFixed(m_timestep);
-					std::cout << pMutation->name() << " was fixed at step " << m_timestep << std::endl; 
+					Reporter_t::ReportFixedMutation(pMutation.get(), m_timestep);
 				}
 			}
 
@@ -239,7 +255,7 @@ class Population
 
 int main(int argc, char** argv)
 {
-	Population<MultiplicativeFitnessModel, AsexualReproductionModel<Mutation>, NullMutationModel> population(100);
+	Population<MultiplicativeFitnessModel, AsexualReproductionModel<Mutation>, NullMutationModel, LostOrFixedMutationsToCOUT> population(100);
 	while ( population.hasSegregatingMutations() )
 	{
 		population.next();
