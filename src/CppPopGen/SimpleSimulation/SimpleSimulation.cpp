@@ -27,7 +27,7 @@ class Mutation
 	{
 	}
 
-    const std::string& name() const
+		const std::string& name() const
 		{
 			return m_name;
 		}
@@ -80,24 +80,24 @@ class Population
 	public:
 
 		Population(size_t popSize) : m_timestep(0), m_popSize(popSize) 
+	{
+		m_organisms.resize(popSize);
+		m_newOrganisms.resize(popSize);
+		m_engine.seed(101L);
+		for ( int i=0; i<m_popSize; ++i )
 		{
-			m_organisms.resize(popSize);
-			m_newOrganisms.resize(popSize);
-			m_engine.seed(101L);
-			for ( int i=0; i<m_popSize; ++i )
-			{
-				std::stringstream ss;
-				ss << "Mutation_" << i;
-				m_mutations.push_back(std::unique_ptr<Mutation>(new Mutation(ss.str(), 0, 0.0)));
-        Mutation* pMutation = m_mutations.back().get();
-				pMutation->incrementCount();
-				m_organisms[i].push_back(pMutation);
-			}
+			std::stringstream ss;
+			ss << "Mutation_" << i;
+			m_mutations.push_back(std::unique_ptr<Mutation>(new Mutation(ss.str(), 0, 0.0)));
+			Mutation* pMutation = m_mutations.back().get();
+			pMutation->incrementCount();
+			m_organisms[i].push_back(pMutation);
 		}
-    
-    typedef std::vector<Mutation*> Organism;
+	}
 
-    void next()
+		typedef std::vector<Mutation*> Organism;
+
+		void next()
 		{
 			++m_timestep;
 
@@ -105,7 +105,7 @@ class Population
 			m_organismSampler.clear();
 			for ( Organism& organism : m_organisms )
 			{
-      	m_organismSampler.add(GetFitness(organism),&organism); 
+				m_organismSampler.add(GetFitness(organism),&organism); 
 			}
 
 			/// Sample and mutate
@@ -115,7 +115,7 @@ class Population
 				Organism* pOrganism = m_organismSampler.GetValue(m_engine);
 				m_newOrganisms.push_back(Organism(*pOrganism));
 			}
-      
+
 			//decrement counts for mutations in current gen
 			for ( Organism& organism : m_organisms )
 			{
@@ -133,29 +133,29 @@ class Population
 					pMutation->incrementCount();
 				}
 			}
-      
-      for ( const auto& pMutation : m_mutations )
+
+			for ( const auto& pMutation : m_mutations )
 			{
-        if ( pMutation->isFixed() ) continue;
+				if ( pMutation->isFixed() ) continue;
 
 				if ( pMutation->count() == 0 )
 				{
-			    pMutation->setFixed(m_timestep);
+					pMutation->setFixed(m_timestep);
 					std::cout << pMutation->name() << " was lost at step " << m_timestep << std::endl; 
 				}
 				else if ( pMutation->count() == m_popSize )
 				{
-			    pMutation->setFixed(m_timestep);
+					pMutation->setFixed(m_timestep);
 					std::cout << pMutation->name() << " was fixed at step " << m_timestep << std::endl; 
 				}
 			}
-    
-      // fill organisms in m_organisms with mutations 
+
+			// fill organisms in m_organisms with mutations 
 			// from m_newOrganisms unless the mutations have fixed
 			m_organisms.clear();
 			for ( Organism& newOrganism : m_newOrganisms )
 			{
-		  	Organism nextGenOrganism;
+				Organism nextGenOrganism;
 				for ( Mutation* pMutation: newOrganism )
 				{
 					if ( ! pMutation->isFixed() )
@@ -166,18 +166,18 @@ class Population
 				m_organisms.push_back(std::move(nextGenOrganism));
 			}
 
-      m_newOrganisms.clear();
+			m_newOrganisms.clear();
 
-						
+
 			//Clear up dead mutations
 			m_mutations.erase( 
 					std::remove_if(m_mutations.begin(), m_mutations.end(),
 						[](std::unique_ptr<Mutation>& m)
 						{
-							return m->isFixed();
+						return m->isFixed();
 						}) 
 					, m_mutations.end());
-			
+
 		}
 
 		static double GetFitness(const std::vector<Mutation*>& organism )
@@ -190,14 +190,14 @@ class Population
 			return fitness;
 		}
 
-    bool hasSegregatingMutations()
+		bool hasSegregatingMutations()
 		{
 			return ! m_mutations.empty();
 		}
 
 	private:
-    size_t m_timestep;
-    size_t m_popSize;
+		size_t m_timestep;
+		size_t m_popSize;
 		std::mt19937 m_engine;
 		PopGen::WeightBasedSampler<Organism*> m_organismSampler;
 		std::vector<std::unique_ptr<Mutation>> m_mutations;
