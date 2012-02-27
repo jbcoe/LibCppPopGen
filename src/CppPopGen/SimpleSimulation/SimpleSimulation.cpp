@@ -75,6 +75,23 @@ class Mutation
 		~Mutation() {}
 };
 
+class MultiplicativeFitnessModel
+{
+	public:
+
+		static double GetFitness(const std::vector<Mutation*>& organism )
+		{
+			double fitness = 1.0;
+			for ( const Mutation* pMutation : organism )
+			{
+				fitness *= ( 1.0 + pMutation->selectiveAdvantage() );
+			}
+			return fitness;
+		}
+
+};
+
+template <class FitnessModel_t>
 class Population
 {
 	public:
@@ -105,7 +122,7 @@ class Population
 			m_organismSampler.clear();
 			for ( Organism& organism : m_organisms )
 			{
-				m_organismSampler.add(GetFitness(organism),&organism); 
+				m_organismSampler.add(FitnessModel_t::GetFitness(organism),&organism); 
 			}
 
 			/// Sample and mutate
@@ -180,16 +197,6 @@ class Population
 
 		}
 
-		static double GetFitness(const std::vector<Mutation*>& organism )
-		{
-			double fitness = 1.0;
-			for ( const Mutation* pMutation : organism )
-			{
-				fitness *= ( 1.0 + pMutation->selectiveAdvantage() );
-			}
-			return fitness;
-		}
-
 		bool hasSegregatingMutations()
 		{
 			return ! m_mutations.empty();
@@ -207,7 +214,7 @@ class Population
 
 int main(int argc, char** argv)
 {
-	Population population(100);
+	Population<MultiplicativeFitnessModel> population(100);
 	while ( population.hasSegregatingMutations() )
 	{
 		population.next();
