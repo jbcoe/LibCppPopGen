@@ -62,12 +62,12 @@ class Mutation
 			return m_count;
 		}
 
-		int incrementCount()
+		void incrementCount()
 		{
 			++m_count;
 		}
 
-		int decrementCount()
+		void decrementCount()
 		{
 			--m_count;
 		}
@@ -228,13 +228,7 @@ class Population
 
 
 			//Clear up dead mutations
-			m_mutations.erase( 
-					std::remove_if(m_mutations.begin(), m_mutations.end(),
-						[](std::unique_ptr<Mutation>& m)
-						{
-						return m->isFixed();
-						}) 
-					, m_mutations.end());
+			m_mutations.erase(std::remove_if(m_mutations.begin(), m_mutations.end(), MutationIsFixed), m_mutations.end());
 
 		}
 
@@ -244,6 +238,12 @@ class Population
 		}
 
 	private:
+		
+		static bool MutationIsFixed(std::unique_ptr<Mutation>& m)
+		{
+			return m->isFixed();
+		}
+
 		size_t m_timestep;
 		size_t m_popSize;
 		std::mt19937 m_engine;
