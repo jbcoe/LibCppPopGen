@@ -130,12 +130,53 @@ class LostOrFixedMutationsToCOUT
 			}
 };
 
+template <class Mutation_t>
+class MutationPool
+{
+	public:
+
+		template <typename... ConstructorArgs>
+    Mutation_t* addMutation(ConstructorArgs... args)
+		{
+			m_mutations.push_back(std::unique_ptr<Mutation_t>(new Mutation_t(args...)));
+			return m_mutations.back().get();
+		}
+
+    bool empty() const { return m_mutations.empty(); }
+    
+    template <class T>
+    static bool True(T t)
+		{
+			return true;
+		}
+
+		template <class MutationFunctor_t>
+		void clearMutationsWithCount(size_t count, MutationFunctor_t& mutationFunctor)
+		{
+			m_mutations.erase( std::remove_if(m_mutations.begin(), m_mutations.end(),
+						[&](std::unique_ptr<Mutation_t>& m)->bool
+						{
+							if ( m->count() == count )
+							{
+								mutationFunctor(m.get());
+								return true;
+							}
+							return false;
+						}), m_mutations.end());
+		}
+
+	private:
+    
+		std::vector<std::unique_ptr<Mutation_t>> m_mutations;
+};
+
 template <class FitnessModel_t, class ReproductionModel_t, class MutationModel_t, class Reporter_t>
 class Population
 {
 	public:
 
-		Population(size_t popSize) : m_timestep(0), m_popSize(popSize) 
+		Population(size_t popSize) : m_timestep(0), m_popSize(popSize), 
+		m_lostMutationFunctor(m_timestep), m_fixedMutationFunctor(m_timestep) 
 	{
 		m_organisms.resize(popSize);
 		m_newOrganisms.resize(popSize);
@@ -144,15 +185,42 @@ class Population
 		{
 			std::stringstream ss;
 			ss << "Mutation_" << i;
-			m_mutations.push_back(std::unique_ptr<Mutation>(new Mutation(ss.str(), 0, 0.0)));
-			Mutation* pMutation = m_mutations.back().get();
+			Mutation* pMutation = m_mutationPool.addMutation(ss.str(), 0, 0.0);
 			pMutation->incrementCount();
 			m_organisms[i].push_back(pMutation);
 		}
 	}
 
 		typedef std::vector<Mutation*> Organism;
+                
+    class FixedMutationFunctor
+		{
+			public:
+        FixedMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
 
+				void operator()(const Mutation* mutation)
+				{
+					Reporter_t::ReportFixedMutation(mutation,m_timestepRef);
+				}
+
+			private:
+				const size_t& m_timestepRef;
+		};
+  
+		class LostMutationFunctor
+		{
+			public:
+        LostMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
+
+				void operator()(const Mutation* mutation)
+				{
+					Reporter_t::ReportLostMutation(mutation,m_timestepRef);
+				}
+
+			private:
+				const size_t& m_timestepRef;
+		};
+		
 		void next()
 		{
 			++m_timestep;
@@ -170,7 +238,8 @@ class Population
 			/// Sample and mutate
 			for ( int i=0; i<m_popSize; ++i )
 			{
-				m_newOrganisms.push_back(ReproductionModel_t::GetNewborn(m_organismSampler, m_engine));
+				m_newOrganisms.push_back(
+						ReproductionModel_t::GetNewborn(m_organismSampler, m_engine));
 				MutationModel_t::Mutate(m_newOrganisms.back());
 			}
 
@@ -192,22 +261,6 @@ class Population
 				}
 			}
 
-			for ( const auto& pMutation : m_mutations )
-			{
-				if ( pMutation->isFixed() ) continue;
-
-				if ( pMutation->count() == 0 )
-				{
-					pMutation->setFixed(m_timestep);  
-					Reporter_t::ReportLostMutation(pMutation.get(), m_timestep);
-				}
-				else if ( pMutation->count() == m_popSize )
-				{
-					pMutation->setFixed(m_timestep);
-					Reporter_t::ReportFixedMutation(pMutation.get(), m_timestep);
-				}
-			}
-
 			// fill organisms in m_organisms with mutations 
 			// from m_newOrganisms unless the mutations have fixed
 			m_organisms.clear();
@@ -216,7 +269,7 @@ class Population
 				Organism nextGenOrganism;
 				for ( Mutation* pMutation: newOrganism )
 				{
-					if ( ! pMutation->isFixed() )
+					if ( pMutation->count() != 0 && pMutation->count() != m_popSize )
 					{
 						nextGenOrganism.push_back(pMutation);
 					}
@@ -226,15 +279,14 @@ class Population
 
 			m_newOrganisms.clear();
 
-
-			//Clear up dead mutations
-			m_mutations.erase(std::remove_if(m_mutations.begin(), m_mutations.end(), MutationIsFixed), m_mutations.end());
-
+			//Clear lost and fixed mutations
+			m_mutationPool.clearMutationsWithCount(0,m_lostMutationFunctor);
+			m_mutationPool.clearMutationsWithCount(m_popSize,m_fixedMutationFunctor);
 		}
 
 		bool hasSegregatingMutations()
 		{
-			return ! m_mutations.empty();
+			return ! m_mutationPool.empty();
 		}
 
 	private:
@@ -246,9 +298,11 @@ class Population
 
 		size_t m_timestep;
 		size_t m_popSize;
+		LostMutationFunctor m_lostMutationFunctor;
+		FixedMutationFunctor m_fixedMutationFunctor;
 		std::mt19937 m_engine;
 		PopGen::WeightBasedSampler<Organism*> m_organismSampler;
-		std::vector<std::unique_ptr<Mutation>> m_mutations;
+		MutationPool<Mutation> m_mutationPool;
 		std::vector<std::vector<Mutation*>> m_organisms;
 		std::vector<std::vector<Mutation*>> m_newOrganisms;
 };
