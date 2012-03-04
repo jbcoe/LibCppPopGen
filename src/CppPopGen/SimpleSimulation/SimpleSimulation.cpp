@@ -136,37 +136,37 @@ class MutationPool
 	public:
 
 		template <typename... ConstructorArgs>
-    Mutation_t* addMutation(ConstructorArgs... args)
-		{
-			m_mutations.push_back(std::unique_ptr<Mutation_t>(new Mutation_t(args...)));
-			return m_mutations.back().get();
-		}
+			Mutation_t* addMutation(ConstructorArgs... args)
+			{
+				m_mutations.push_back(std::unique_ptr<Mutation_t>(new Mutation_t(args...)));
+				return m_mutations.back().get();
+			}
 
-    bool empty() const { return m_mutations.empty(); }
-    
-    template <class T>
-    static bool True(T t)
-		{
-			return true;
-		}
+		bool empty() const { return m_mutations.empty(); }
+
+		template <class T>
+			static bool True(T t)
+			{
+				return true;
+			}
 
 		template <class MutationFunctor_t>
-		void clearMutationsWithCount(size_t count, MutationFunctor_t& mutationFunctor)
-		{
-			m_mutations.erase( std::remove_if(m_mutations.begin(), m_mutations.end(),
-						[&](std::unique_ptr<Mutation_t>& m)->bool
-						{
+			void clearMutationsWithCount(size_t count, MutationFunctor_t& mutationFunctor)
+			{
+				m_mutations.erase( std::remove_if(m_mutations.begin(), m_mutations.end(),
+							[&](std::unique_ptr<Mutation_t>& m)->bool
+							{
 							if ( m->count() == count )
 							{
-								mutationFunctor(m.get());
-								return true;
+							mutationFunctor(m.get());
+							return true;
 							}
 							return false;
-						}), m_mutations.end());
-		}
+							}), m_mutations.end());
+			}
 
 	private:
-    
+
 		std::vector<std::unique_ptr<Mutation_t>> m_mutations;
 };
 
@@ -192,11 +192,11 @@ class Population
 	}
 
 		typedef std::vector<Mutation*> Organism;
-                
-    class FixedMutationFunctor
+
+		class FixedMutationFunctor
 		{
 			public:
-        FixedMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
+				FixedMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
 
 				void operator()(const Mutation* mutation)
 				{
@@ -206,11 +206,11 @@ class Population
 			private:
 				const size_t& m_timestepRef;
 		};
-  
+
 		class LostMutationFunctor
 		{
 			public:
-        LostMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
+				LostMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
 
 				void operator()(const Mutation* mutation)
 				{
@@ -220,11 +220,30 @@ class Population
 			private:
 				const size_t& m_timestepRef;
 		};
-		
+
 		void next()
 		{
 			++m_timestep;
 
+			makeNewborn();
+
+			newbornBecomeAdults();
+
+			//Clear lost and fixed mutations
+			m_mutationPool.clearMutationsWithCount(0,m_lostMutationFunctor);
+			m_mutationPool.clearMutationsWithCount(m_popSize,m_fixedMutationFunctor);
+		}
+
+		bool hasSegregatingMutations()
+		{
+			return ! m_mutationPool.empty();
+		}
+
+	private:
+
+
+		void makeNewborn()
+		{
 			m_newOrganisms.clear();
 
 			/// Set up sampler
@@ -242,7 +261,10 @@ class Population
 						ReproductionModel_t::GetNewborn(m_organismSampler, m_engine));
 				MutationModel_t::Mutate(m_newOrganisms.back());
 			}
+		}
 
+		void newbornBecomeAdults()
+		{
 			//decrement counts for mutations in current gen
 			for ( Organism& organism : m_organisms )
 			{
@@ -278,19 +300,8 @@ class Population
 			}
 
 			m_newOrganisms.clear();
-
-			//Clear lost and fixed mutations
-			m_mutationPool.clearMutationsWithCount(0,m_lostMutationFunctor);
-			m_mutationPool.clearMutationsWithCount(m_popSize,m_fixedMutationFunctor);
 		}
 
-		bool hasSegregatingMutations()
-		{
-			return ! m_mutationPool.empty();
-		}
-
-	private:
-		
 		static bool MutationIsFixed(std::unique_ptr<Mutation>& m)
 		{
 			return m->isFixed();
