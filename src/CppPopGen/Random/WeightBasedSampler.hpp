@@ -8,104 +8,99 @@ BEGIN_CPP_POPGEN
 template <typename Value_t>
 class WeightBasedSampler
 {
+	struct WeightsAndValue
+	{
+		double m_weight;
+		double m_cumulativeWeight;
+		Value_t m_value;
+
+		WeightsAndValue(double weight, Value_t value) : m_weight(weight),
+		m_value(value), m_cumulativeWeight(0.0) {}
+	};
+
+	typedef std::vector<WeightsAndValue> WeightsAndValues;
+
 	public:
 
-		WeightBasedSampler() 
-			: m_weightSum(0.0) 
+	WeightBasedSampler() 
+		: m_weightSum(0.0) 
+	{
+	}
+
+	void add(double weight, Value_t value)
+	{ 
+		if ( weight < 0.0 )
+			throw std::runtime_error("Weight in weight-based sampler must not be negative");
+		if ( weight == 0.0 )
+			return;
+		m_weightSum += weight;
+		m_weightsAndValues.push_back(WeightsAndValue(weight,value));
+		m_weightsAndValues.back().m_cumulativeWeight = m_weightSum;
+		m_uniformDist = std::uniform_real_distribution<double>(0,m_weightSum);
+	}
+
+	void reserve(size_t reservedSize)
+	{
+		m_weightsAndValues.reserve(reservedSize);
+	}
+
+	void clear()
+	{
+		m_weightsAndValues.clear();
+		m_weightSum = 0.0;
+	}
+
+	Value_t& GetValueForWeight( double cumulativeWeightValue )
+	{
+		auto find_value = findValue(cumulativeWeightValue);
+		if ( find_value == m_weightsAndValues.end() )
+			throw std::runtime_error("Weight value cannot be found in cumulative weights");
+		return find_value->m_value;
+	}
+
+	template <typename RandomEngine_t>
+		Value_t& GetValue(RandomEngine_t& randomEngine)
 		{
+			double randomValue = m_uniformDist(randomEngine);
+			return GetValueForWeight(randomValue);
 		}
 
-		void add(double weight, Value_t value)
-		{ 
-			if ( weight < 0.0 )
-				throw std::runtime_error("Weight in weight-based sampler must not be negative");
-			m_weightSum += weight;
-			m_cumulativeWeights.push_back(m_weightSum);
-			m_values.push_back(value);
-			m_uniformDist = std::uniform_real_distribution<double>(0,m_cumulativeWeights.back());
-		}
+	typename WeightsAndValues::iterator findValue( double value )
+	{
+		auto first = m_weightsAndValues.begin();
+		auto last = m_weightsAndValues.end();
+		auto remainingLength = std::distance(first,last);
 
-		void reserve(size_t reservedSize)
+		while( remainingLength > 0 )
 		{
-			m_cumulativeWeights.reserve(reservedSize);
-			m_values.reserve(reservedSize);
-		}
-
-		void clear()
-		{
-			m_cumulativeWeights.clear();
-			m_values.clear();
-			m_weightSum = 0.0;
-		}
-
-
-		Value_t& GetValueForWeight( double cumulativeWeightValue )
-		{
-			int valueIndex = getIndex(cumulativeWeightValue, m_cumulativeWeights);
-			if ( valueIndex < 0 )
-				throw std::runtime_error("Weight value cannot be found in cumulative weights");
-			return m_values[valueIndex];
-		}
-
-		template <typename RandomEngine_t>
-			Value_t& GetValue(RandomEngine_t& randomEngine)
+			if ( value <= first->m_cumulativeWeight )
 			{
-				double randomValue = m_uniformDist(randomEngine);
-				int valueIndex = getIndex(randomValue, m_cumulativeWeights);
-				if ( valueIndex < 0 )
-					throw std::runtime_error("Weight value cannot be found in cumulative weights");
-				return m_values[valueIndex];
+				return first;
 			}
 
-		/// return -1 if index cannot be found
-		template <typename T>
-			static int getIndex(T value, const std::vector<T>& weights) 
-			{
-				if ( weights.empty() || value > weights.back() )
-				{
-					return -1;
-				}
+			auto step = remainingLength / 2;
+			auto it = first + step; 
 
-				int left, right, middle;
-				int index = -1;
-
-				left = 0;
-				right = weights.size() - 1;
-
-				while (left <= right) 
-				{
-					middle = (left + right + 1) / 2;
-
-					if (middle == 0) 
-					{
-						if ( value <= weights[0] ) 
-						{
-							index = 0;
-						}
-						break;
-					}
-					else if ( value <= weights[middle] && value > weights[middle-1] )
-					{
-						index = middle;
-						break;
-					} 
-					else if ( value > weights[middle] ) 
-					{
-						left = middle + 1;
-					} 
-					else 
-					{
-						right = middle - 1;
-					}
-				}
-				return index;
+			if ( value <= it->m_cumulativeWeight )
+			{               
+				remainingLength = step;
+				++first;
 			}
+			else
+			{
+				first = it + 1;
+				remainingLength -= ( step + 1 );
+			}
+		}
+		return last;
+	}
 
 	private:
-		std::uniform_real_distribution<double> m_uniformDist;
-		std::vector<double> m_cumulativeWeights;
-		std::vector<Value_t> m_values;
-		double m_weightSum;
+	std::uniform_real_distribution<double> m_uniformDist;
+
+	double m_weightSum;
+
+	WeightsAndValues m_weightsAndValues;
 };
 
 END_CPP_POPGEN
