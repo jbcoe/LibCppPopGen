@@ -22,6 +22,13 @@ class WeightBasedSampler
 
 	public:
 
+  class WeightBasedSamplerException : public std::runtime_error
+	{
+		public:
+			WeightBasedSamplerException(const std::string& err) 
+			: std::runtime_error(err) {}
+	};
+
 	WeightBasedSampler() 
 		: m_weightSum(0.0) 
 	{
@@ -29,10 +36,8 @@ class WeightBasedSampler
 
 	void add(double weight, Value_t value)
 	{ 
-		if ( weight < 0.0 )
-			throw std::runtime_error("Weight in weight-based sampler must not be negative");
-		if ( weight == 0.0 )
-			return;
+		if ( weight <= 0.0 )
+			throw WeightBasedSamplerException("Weight in weight-based sampler must not be negative");
 		m_weightSum += weight;
 		m_weightsAndValues.push_back(WeightsAndValue(weight,value));
 		m_weightsAndValues.back().m_cumulativeWeight = m_weightSum;
@@ -54,7 +59,7 @@ class WeightBasedSampler
 	{
 		auto find_value = findValue(cumulativeWeightValue);
 		if ( find_value == m_weightsAndValues.end() )
-			throw std::runtime_error("Weight value cannot be found in cumulative weights");
+			throw WeightBasedSamplerException("Weight value cannot be found in cumulative weights");
 		return find_value->m_value;
 	}
 

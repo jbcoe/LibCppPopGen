@@ -16,6 +16,9 @@ all: $(SOURCES) $(EXECUTABLE)
 edit:
 	vim $(SOURCES)
 
+TestRunner.o: TestRunner.cpp ../Random/TestWeightBasedSampler.hpp \
+  ../Random/WeightBasedSampler.hpp ../Random/../CppPopGenBase.h
+
 .cpp.o:
 	$(CC) $(CCFLAGS) $< -c -o $@
 
