@@ -1,4 +1,5 @@
 #include <vector>
+#include <algorithm>
 #include <random>
 #include <stdexcept>
 #include "../CppPopGenBase.h"
@@ -72,32 +73,14 @@ class WeightBasedSampler
 
 	typename WeightsAndValues::iterator findValue( double value )
 	{
-		auto first = m_weightsAndValues.begin();
-		auto last = m_weightsAndValues.end();
-		auto remainingLength = std::distance(first,last);
-
-		while( remainingLength > 0 )
-		{
-			if ( value <= first->m_cumulativeWeight )
-			{
-				return first;
-			}
-
-			auto step = remainingLength / 2;
-			auto it = first + step; 
-
-			if ( value <= it->m_cumulativeWeight )
-			{               
-				remainingLength = step;
-				++first;
-			}
-			else
-			{
-				first = it + 1;
-				remainingLength -= ( step + 1 );
-			}
-		}
-		return last;
+		auto lowerBound_it = std::lower_bound(m_weightsAndValues.begin(),
+				m_weightsAndValues.end(), value, 
+				[](const WeightsAndValue& w, double r)
+				{
+					return w.m_cumulativeWeight < r;	
+				});
+		
+		return lowerBound_it;
 	}
 
 	private:
