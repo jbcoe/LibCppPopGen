@@ -1,5 +1,5 @@
 CC = g++-mp-4.7
-CCFLAGS = -std=c++0x -I /opt/local/include 
+CCFLAGS = -std=c++0x -I .. -I /opt/local/include 
 LDFLAGS = -std=c++0x -L/opt/local/lib -lcppunit
 
 SOURCES=TestRunner.cpp
@@ -17,7 +17,7 @@ edit:
 	vim $(SOURCES)
 
 TestRunner.o: TestRunner.cpp ../Random/TestWeightBasedSampler.hpp \
-  ../Random/WeightBasedSampler.hpp ../Random/../CppPopGenBase.h
+  ../Random/WeightBasedSampler.hpp ../Random/../CppPopGenBase.hpp
 
 .cpp.o:
 	$(CC) $(CCFLAGS) $< -c -o $@

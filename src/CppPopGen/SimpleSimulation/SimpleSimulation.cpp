@@ -1,11 +1,11 @@
-#include <CppPopGenBase.h>
+#include <CppPopGenBase.hpp>
 #include <Random/WeightBasedSampler.hpp>
-#include <SimpleSimulation/Mutation.h>
-#include <SimpleSimulation/MutationPool.h>
-#include <SimpleSimulation/MultiplicativeFitnessModel.h>
-#include <SimpleSimulation/AsexualReproductionModel.h>
-#include <SimpleSimulation/NullMutationModel.h>
-#include <SimpleSimulation/LostOrFixedMutationsToCOUT.h>
+#include <SimpleSimulation/Mutation.hpp>
+#include <SimpleSimulation/MutationPool.hpp>
+#include <SimpleSimulation/MultiplicativeFitnessModel.hpp>
+#include <SimpleSimulation/AsexualReproductionModel.hpp>
+#include <SimpleSimulation/NullMutationModel.hpp>
+#include <SimpleSimulation/LostOrFixedMutationsToCOUT.hpp>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -18,8 +18,7 @@ class Population
 {
 	public:
 
-		Population(size_t popSize) : m_timestep(0), m_popSize(popSize), 
-		m_lostMutationFunctor(m_timestep), m_fixedMutationFunctor(m_timestep) 
+		Population(size_t popSize) : m_timestep(0), m_popSize(popSize) 
 	{
 		m_organisms.resize(popSize);
 		m_newOrganisms.resize(popSize);
@@ -45,8 +44,15 @@ class Population
 			newbornBecomeAdults();
 
 			//Clear lost and fixed mutations
-			m_mutationPool.clearMutationsWithCount(0,m_lostMutationFunctor);
-			m_mutationPool.clearMutationsWithCount(m_popSize,m_fixedMutationFunctor);
+			m_mutationPool.clearMutationsWithCount(0,[this](const Mutation* mutation)
+					{
+						Reporter_t::ReportLostMutation(mutation,this->m_timestep);
+					});
+
+			m_mutationPool.clearMutationsWithCount(m_popSize,[this](const Mutation* mutation)
+					{
+						Reporter_t::ReportFixedMutation(mutation,this->m_timestep);
+					});
 		}
 
 		bool hasSegregatingMutations()
@@ -55,35 +61,6 @@ class Population
 		}
 
 	private:
-
-		class FixedMutationFunctor
-		{
-			public:
-				FixedMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
-
-				void operator()(const Mutation* mutation)
-				{
-					Reporter_t::ReportFixedMutation(mutation,m_timestepRef);
-				}
-
-			private:
-				const size_t& m_timestepRef;
-		};
-
-		class LostMutationFunctor
-		{
-			public:
-				LostMutationFunctor(const size_t& timestep) : m_timestepRef(timestep) {}
-
-				void operator()(const Mutation* mutation)
-				{
-					Reporter_t::ReportLostMutation(mutation,m_timestepRef);
-				}
-
-			private:
-				const size_t& m_timestepRef;
-		};
-
 
 		void makeNewborn()
 		{
@@ -151,9 +128,7 @@ class Population
 		}
 
 		size_t m_timestep;
-		size_t m_popSize;
-		LostMutationFunctor m_lostMutationFunctor;
-		FixedMutationFunctor m_fixedMutationFunctor;
+		const size_t m_popSize;
 		std::mt19937 m_engine;
 		PopGen::WeightBasedSampler<Organism*> m_organismSampler;
 		MutationPool<Mutation> m_mutationPool;

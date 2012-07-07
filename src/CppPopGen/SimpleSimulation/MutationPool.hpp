@@ -16,7 +16,7 @@ class MutationPool
 		bool empty() const { return m_mutations.empty(); }
 
 		template <class MutationFunctor_t>
-			void clearMutationsWithCount(size_t count, MutationFunctor_t& mutationFunctor)
+			void clearMutationsWithCount(size_t count, const MutationFunctor_t& mutationFunctor)
 			{
 				m_mutations.erase( std::remove_if(m_mutations.begin(), m_mutations.end(),
 							[&](std::unique_ptr<Mutation_t>& m)->bool

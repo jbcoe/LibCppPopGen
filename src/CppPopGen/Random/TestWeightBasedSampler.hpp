@@ -1,4 +1,4 @@
-#include "WeightBasedSampler.hpp"
+#include <Random/WeightBasedSampler.hpp>
 #include <cppunit/TestSuite.h>
 #include <cppunit/extensions/HelperMacros.h>
 
