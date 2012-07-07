@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <random>
 #include <stdexcept>
-#include <CppPopGenBase.hpp>
+#include <CppPopGen/CppPopGenBase.hpp>
 
 BEGIN_CPP_POPGEN
 

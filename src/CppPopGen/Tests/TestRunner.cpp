@@ -3,7 +3,7 @@
 #include <cppunit/TestSuite.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/ui/text/TestRunner.h>
-#include "../Random/TestWeightBasedSampler.hpp"
+#include <CppPopGen/Random/TestWeightBasedSampler.hpp>
 
 int main (int argc, char** argv)
 {
