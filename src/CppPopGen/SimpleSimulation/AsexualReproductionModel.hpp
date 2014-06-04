@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 
 template <class Mutation_t>

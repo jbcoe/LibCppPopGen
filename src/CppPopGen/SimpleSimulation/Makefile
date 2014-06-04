@@ -1,6 +1,6 @@
-CC = g++-mp-4.7
-CCFLAGS = -std=c++0x -I/opt/local/include -I../../
-LDFLAGS = -std=c++0x -L/opt/local/lib
+CC = clang++
+CCFLAGS = -std=c++11 -I/opt/local/include -I../../
+LDFLAGS = -std=c++11 -L/opt/local/lib
 
 SOURCES=SimpleSimulation.cpp
 

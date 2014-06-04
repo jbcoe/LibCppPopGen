@@ -1,4 +1,7 @@
+#pragma once
 #include <vector>
+#include "Mutation.hpp"
+
 
 class MultiplicativeFitnessModel
 {
